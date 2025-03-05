@@ -34,15 +34,13 @@ jobs:
             BUILD_GRADLE="$PLUGIN_PATH/android/build.gradle"
             echo "Found ar_flutter_plugin at $PLUGIN_PATH"
             if [ -f "$BUILD_GRADLE" ]; then
-              # Check if namespace is already defined
+              # 1. Add namespace if not present
               if ! grep -q "namespace" "$BUILD_GRADLE"; then
-                # Extract package name from AndroidManifest.xml
                 MANIFEST="$PLUGIN_PATH/android/src/main/AndroidManifest.xml"
                 if [ -f "$MANIFEST" ]; then
                   PACKAGE=$(grep -o 'package="[^"]*"' "$MANIFEST" | cut -d'"' -f2)
                   if [ -n "$PACKAGE" ]; then
                     echo "Adding namespace '$PACKAGE' to $BUILD_GRADLE"
-                    # Add namespace to the android block
                     sed -i '/android {/a \    namespace "'"$PACKAGE"'"' "$BUILD_GRADLE"
                   else
                     echo "Could not find package in $MANIFEST"
@@ -55,6 +53,17 @@ jobs:
               else
                 echo "Namespace already defined in $BUILD_GRADLE"
               fi
+              # 2. Update Kotlin Gradle plugin version to 1.9.0
+              if grep -q "kotlin-gradle-plugin:1.3.50" "$BUILD_GRADLE"; then
+                echo "Updating Kotlin Gradle plugin from 1.3.50 to 1.9.0 in $BUILD_GRADLE"
+                sed -i 's/kotlin-gradle-plugin:1.3.50/kotlin-gradle-plugin:1.9.0/' "$BUILD_GRADLE"
+              else
+                echo "Kotlin Gradle plugin version 1.3.50 not found in $BUILD_GRADLE, checking current version"
+                CURRENT_VERSION=$(grep "kotlin-gradle-plugin" "$BUILD_GRADLE" || echo "Not found")
+                echo "Current Kotlin version: $CURRENT_VERSION"
+              fi
+              # Log the modified file for debugging
+              cat "$BUILD_GRADLE"
             else
               echo "build.gradle not found at $BUILD_GRADLE"
               exit 1

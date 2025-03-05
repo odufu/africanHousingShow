@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlin_version = '1.9.0' // Modern Kotlin version
+    ext.kotlin_version = '1.9.0'
     repositories {
         google()
         mavenCentral()
@@ -7,21 +7,6 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:7.3.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-    }
-}
-
-// Force all subprojects to use the specified Kotlin version
-subprojects {
-    afterEvaluate {
-        if (project.plugins.hasPlugin('kotlin-android')) {
-            // Ensure Kotlin dependencies use the specified version
-            dependencies {
-                implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-                implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-            }
-            // Override the Kotlin plugin version if applied
-            project.extensions.findByName('kotlin')?.version = kotlin_version
-        }
     }
 }
 
