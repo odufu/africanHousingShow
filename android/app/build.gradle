@@ -2,9 +2,7 @@ plugins {
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
-    // Removed 'kotlin-android-extensions' (deprecated)
-    // Removed 'kotlin-kapt' (not needed unless using annotation processing)
-    id "kotlin-parcelize" // Kept this if you're using Parcelable
+    id "kotlin-parcelize" // Kept if you're using Parcelable
 }
 
 android {
@@ -32,7 +30,6 @@ android {
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
-            // Signing with debug keys for now, so `flutter run --release` works.
             signingConfig signingConfigs.debug
         }
     }

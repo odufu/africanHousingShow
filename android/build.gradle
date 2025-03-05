@@ -1,13 +1,13 @@
 buildscript {
-    ext.kotlin_version = '1.9.0' // Set a modern, compatible Kotlin version
+    ext.kotlin_version = '1.9.0' // Modern Kotlin version
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.3.0' // Compatible Android Gradle plugin
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'dev.flutter.flutter-gradle-plugin:1.0.0' // Flutter Gradle plugin
+        classpath 'com.android.tools.build:gradle:7.3.0' // Android Gradle plugin
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version" // Kotlin Gradle plugin
+        // Removed 'dev.flutter.flutter-gradle-plugin:1.0.0' - Flutter handles this
     }
 }
 
