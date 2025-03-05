@@ -37,6 +37,7 @@ jobs:
               echo "Original build.gradle content:"
               cat "$BUILD_GRADLE"
               echo "--------------------------------"
+              # 1. Add namespace if not present
               if ! grep -q "namespace" "$BUILD_GRADLE"; then
                 MANIFEST="$PLUGIN_PATH/android/src/main/AndroidManifest.xml"
                 if [ -f "$MANIFEST" ]; then
@@ -55,6 +56,7 @@ jobs:
               else
                 echo "Namespace already defined in $BUILD_GRADLE"
               fi
+              # 2. Update ext.kotlin_version to 1.9.0
               echo "Attempting to update Kotlin version..."
               if grep -q "ext.kotlin_version" "$BUILD_GRADLE"; then
                 echo "Found ext.kotlin_version, updating to 1.9.0"
@@ -74,9 +76,19 @@ jobs:
                   echo -e "buildscript {\n    ext.kotlin_version = \"1.9.0\"\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath \"org.jetbrains.kotlin:kotlin-gradle-plugin:\$kotlin_version\"\n    }\n}\n$(cat $BUILD_GRADLE)" > "$BUILD_GRADLE.tmp" && mv "$BUILD_GRADLE.tmp" "$BUILD_GRADLE"
                 fi
               fi
+              # 3. Add kotlinOptions with jvmTarget 1.8
               if ! grep -q "kotlinOptions" "$BUILD_GRADLE"; then
                 echo "Adding kotlinOptions with jvmTarget 1.8"
                 sed -i '/android {/a \    kotlinOptions {\n        jvmTarget = "1.8"\n    }' "$BUILD_GRADLE"
+              fi
+              # 4. Update compileSdkVersion to 33
+              echo "Updating compileSdkVersion to 33..."
+              sed -i 's/compileSdkVersion [0-2][0-9]/compileSdkVersion 33/g' "$BUILD_GRADLE"
+              if grep -q "compileSdkVersion 30" "$BUILD_GRADLE"; then
+                echo "ERROR: Failed to update compileSdkVersion, 30 still present"
+                exit 1
+              else
+                echo "Successfully updated compileSdkVersion to 33"
               fi
               echo "Modified build.gradle content:"
               cat "$BUILD_GRADLE"
@@ -165,7 +177,7 @@ jobs:
         run: flutter pub get
 
       - name: Build APK
-        run: flutter build apk --release
+        run: flutter build apk --release --stacktrace
 
       - name: Debug APK Path
         run: ls -al build/app/outputs/flutter-apk/
