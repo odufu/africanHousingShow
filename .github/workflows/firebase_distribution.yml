@@ -28,7 +28,6 @@ jobs:
 
       - name: Patch ar_flutter_plugin build.gradle
         run: |
-          # Locate ar_flutter_plugin version 0.7.3 in .pub-cache
           PLUGIN_PATH=$(find ~/.pub-cache/hosted -type d -name "ar_flutter_plugin-0.7.3" | head -n 1)
           if [ -n "$PLUGIN_PATH" ]; then
             BUILD_GRADLE="$PLUGIN_PATH/android/build.gradle"
@@ -38,7 +37,6 @@ jobs:
               echo "Original build.gradle content:"
               cat "$BUILD_GRADLE"
               echo "--------------------------------"
-              # 1. Add namespace if not present
               if ! grep -q "namespace" "$BUILD_GRADLE"; then
                 MANIFEST="$PLUGIN_PATH/android/src/main/AndroidManifest.xml"
                 if [ -f "$MANIFEST" ]; then
@@ -57,7 +55,6 @@ jobs:
               else
                 echo "Namespace already defined in $BUILD_GRADLE"
               fi
-              # 2. Update ext.kotlin_version to 1.9.0
               echo "Attempting to update Kotlin version..."
               if grep -q "ext.kotlin_version" "$BUILD_GRADLE"; then
                 echo "Found ext.kotlin_version, updating to 1.9.0"
@@ -89,16 +86,6 @@ jobs:
             exit 1
           fi
 
-      - name: Clear Gradle and Flutter Caches
-        run: |
-          echo "Clearing Gradle cache..."
-          rm -rf ~/.gradle/caches/
-          echo "Clearing Flutter build cache..."
-          flutter clean
-
-      - name: Re-install dependencies
-        run: flutter pub get
-
       - name: Patch arcore_flutter_plugin build.gradle
         run: |
           PLUGIN_PATH=$(find ~/.pub-cache/hosted -type d -name "arcore_flutter_plugin-*" | head -n 1)
@@ -106,6 +93,9 @@ jobs:
             BUILD_GRADLE="$PLUGIN_PATH/android/build.gradle"
             echo "Found arcore_flutter_plugin at $PLUGIN_PATH"
             if [ -f "$BUILD_GRADLE" ]; then
+              echo "Original build.gradle content:"
+              cat "$BUILD_GRADLE"
+              echo "--------------------------------"
               if ! grep -q "namespace" "$BUILD_GRADLE"; then
                 MANIFEST="$PLUGIN_PATH/android/src/main/AndroidManifest.xml"
                 if [ -f "$MANIFEST" ]; then
@@ -118,7 +108,6 @@ jobs:
                     else
                       sed -i '/android {/a \    namespace "'"$PACKAGE"'"' "$BUILD_GRADLE"
                     fi
-                    cat "$BUILD_GRADLE"
                   else
                     echo "Error: Could not find package in $MANIFEST"
                     exit 1
@@ -130,6 +119,28 @@ jobs:
               else
                 echo "Namespace already defined in $BUILD_GRADLE"
               fi
+              echo "Attempting to update Kotlin version..."
+              if grep -q "ext.kotlin_version" "$BUILD_GRADLE"; then
+                echo "Found ext.kotlin_version, updating to 1.9.0"
+                sed -i "s/ext.kotlin_version = '[0-1]\.[0-9]\.[0-9]\{1,2\}'/ext.kotlin_version = '1.9.0'/g" "$BUILD_GRADLE"
+                if grep -q "ext.kotlin_version = '1.3.50'" "$BUILD_GRADLE"; then
+                  echo "ERROR: Failed to update ext.kotlin_version, 1.3.50 still present"
+                  exit 1
+                else
+                  echo "Successfully updated ext.kotlin_version to 1.9.0"
+                fi
+              else
+                echo "No ext.kotlin_version found, adding it to buildscript"
+                if grep -q "buildscript {" "$BUILD_GRADLE"; then
+                  sed -i '/buildscript {/a \    ext.kotlin_version = "1.9.0"' "$BUILD_GRADLE"
+                else
+                  echo "Adding full buildscript block"
+                  echo -e "buildscript {\n    ext.kotlin_version = \"1.9.0\"\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath \"org.jetbrains.kotlin:kotlin-gradle-plugin:\$kotlin_version\"\n    }\n}\n$(cat $BUILD_GRADLE)" > "$BUILD_GRADLE.tmp" && mv "$BUILD_GRADLE.tmp" "$BUILD_GRADLE"
+                fi
+              fi
+              echo "Modified build.gradle content:"
+              cat "$BUILD_GRADLE"
+              echo "--------------------------------"
             else
               echo "Error: build.gradle not found at $BUILD_GRADLE"
               exit 1
@@ -138,6 +149,16 @@ jobs:
             echo "Error: arcore_flutter_plugin not found in .pub-cache"
             exit 1
           fi
+
+      - name: Clear Gradle and Flutter Caches
+        run: |
+          echo "Clearing Gradle cache..."
+          rm -rf ~/.gradle/caches/
+          echo "Clearing Flutter build cache..."
+          flutter clean
+
+      - name: Re-install dependencies
+        run: flutter pub get
 
       - name: Build APK
         run: flutter build apk --release
