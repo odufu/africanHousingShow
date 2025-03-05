@@ -180,7 +180,7 @@ jobs:
         run: flutter pub get
 
       - name: Build APK
-        run: flutter build apk --release --stacktrace
+        run: flutter build apk --release
 
       - name: Debug APK Path
         run: ls -al build/app/outputs/flutter-apk/
