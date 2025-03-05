@@ -13,14 +13,14 @@ buildscript {
 // Force all subprojects to use the specified Kotlin version
 subprojects {
     afterEvaluate {
-        dependencies {
-            implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-            implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-        }
         if (project.plugins.hasPlugin('kotlin-android')) {
-            project.dependencies {
-                classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+            // Ensure Kotlin dependencies use the specified version
+            dependencies {
+                implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+                implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
             }
+            // Override the Kotlin plugin version if applied
+            project.extensions.findByName('kotlin')?.version = kotlin_version
         }
     }
 }

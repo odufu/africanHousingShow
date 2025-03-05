@@ -110,7 +110,7 @@ jobs:
           fi
 
       - name: Build APK
-        run: flutter build apk --release
+        run: flutter build apk --release --stacktrace
 
       - name: Debug APK Path
         run: ls -al build/app/outputs/flutter-apk/
