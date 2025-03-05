@@ -83,7 +83,10 @@ jobs:
               fi
               # 4. Update compileSdkVersion to 33
               echo "Updating compileSdkVersion to 33..."
-              sed -i 's/compileSdkVersion [0-2][0-9]/compileSdkVersion 33/g' "$BUILD_GRADLE"
+              sed -i 's/compileSdkVersion [0-9]\{1,2\}/compileSdkVersion 33/g' "$BUILD_GRADLE"
+              echo "After compileSdkVersion update:"
+              cat "$BUILD_GRADLE"
+              echo "--------------------------------"
               if grep -q "compileSdkVersion 30" "$BUILD_GRADLE"; then
                 echo "ERROR: Failed to update compileSdkVersion, 30 still present"
                 exit 1
