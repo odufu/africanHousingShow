@@ -57,15 +57,21 @@ jobs:
                 echo "Namespace already defined in $BUILD_GRADLE"
               fi
               # 2. Update Kotlin Gradle plugin version to 1.9.0
+              echo "Attempting to update Kotlin Gradle plugin version..."
               if grep -q "kotlin-gradle-plugin" "$BUILD_GRADLE"; then
-                echo "Updating Kotlin Gradle plugin to 1.9.0 in $BUILD_GRADLE"
-                sed -i 's/kotlin-gradle-plugin:[0-1]\.[0-9]\.[0-9]\{1,2\}/kotlin-gradle-plugin:1.9.0/' "$BUILD_GRADLE"
+                echo "Found kotlin-gradle-plugin, replacing version with 1.9.0"
+                sed -i 's/kotlin-gradle-plugin:[0-1]\.[0-9]\.[0-9]\{1,2\}/kotlin-gradle-plugin:1.9.0/g' "$BUILD_GRADLE"
+                if grep -q "kotlin-gradle-plugin:1.3.50" "$BUILD_GRADLE"; then
+                  echo "WARNING: Replacement failed, 1.3.50 still present"
+                else
+                  echo "Kotlin version updated successfully"
+                fi
               else
                 echo "No kotlin-gradle-plugin found, adding it to buildscript"
                 if grep -q "buildscript {" "$BUILD_GRADLE"; then
                   sed -i '/buildscript {/a \    dependencies {\n        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0"\n    }' "$BUILD_GRADLE"
                 else
-                  echo "Adding buildscript block"
+                  echo "Adding full buildscript block"
                   echo -e "buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath \"org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0\"\n    }\n}\n$(cat $BUILD_GRADLE)" > "$BUILD_GRADLE.tmp" && mv "$BUILD_GRADLE.tmp" "$BUILD_GRADLE"
                 fi
               fi
@@ -80,9 +86,18 @@ jobs:
             exit 1
           fi
 
+      - name: Clear Gradle and Flutter Caches
+        run: |
+          echo "Clearing Gradle cache..."
+          rm -rf ~/.gradle/caches/
+          echo "Clearing Flutter build cache..."
+          flutter clean
+
+      - name: Re-install dependencies
+        run: flutter pub get
+
       - name: Patch arcore_flutter_plugin build.gradle
         run: |
-          # Locate arcore_flutter_plugin (adjust version or use wildcard if unknown)
           PLUGIN_PATH=$(find ~/.pub-cache/hosted -type d -name "arcore_flutter_plugin-*" | head -n 1)
           if [ -n "$PLUGIN_PATH" ]; then
             BUILD_GRADLE="$PLUGIN_PATH/android/build.gradle"
