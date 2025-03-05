@@ -64,6 +64,51 @@ jobs:
             exit 1
           fi
 
+      - name: Patch arcore_flutter_plugin build.gradle
+        run: |
+          # Locate arcore_flutter_plugin (adjust version or use wildcard if unknown)
+          PLUGIN_PATH=$(find ~/.pub-cache/hosted -type d -name "arcore_flutter_plugin-*" | head -n 1)
+          if [ -n "$PLUGIN_PATH" ]; then
+            BUILD_GRADLE="$PLUGIN_PATH/android/build.gradle"
+            echo "Found arcore_flutter_plugin at $PLUGIN_PATH"
+            if [ -f "$BUILD_GRADLE" ]; then
+              # Check if namespace is already defined
+              if ! grep -q "namespace" "$BUILD_GRADLE"; then
+                # Extract package name from AndroidManifest.xml
+                MANIFEST="$PLUGIN_PATH/android/src/main/AndroidManifest.xml"
+                if [ -f "$MANIFEST" ]; then
+                  PACKAGE=$(grep -o 'package="[^"]*"' "$MANIFEST" | cut -d'"' -f2)
+                  if [ -n "$PACKAGE" ]; then
+                    echo "Adding namespace '$PACKAGE' to $BUILD_GRADLE"
+                    # Check if android block exists, add it if not
+                    if ! grep -q "android {" "$BUILD_GRADLE"; then
+                      echo "No android block found, adding one"
+                      echo -e "android {\n    namespace \"$PACKAGE\"\n}" >> "$BUILD_GRADLE"
+                    else
+                      # Add namespace to existing android block
+                      sed -i '/android {/a \    namespace "'"$PACKAGE"'"' "$BUILD_GRADLE"
+                    fi
+                    cat "$BUILD_GRADLE"  # Log the modified file for debugging
+                  else
+                    echo "Error: Could not find package in $MANIFEST"
+                    exit 1
+                  fi
+                else
+                  echo "Error: AndroidManifest.xml not found at $MANIFEST"
+                  exit 1
+                fi
+              else
+                echo "Namespace already defined in $BUILD_GRADLE"
+              fi
+            else
+              echo "Error: build.gradle not found at $BUILD_GRADLE"
+              exit 1
+            fi
+          else
+            echo "Error: arcore_flutter_plugin not found in .pub-cache"
+            exit 1
+          fi
+
       - name: Build APK
         run: flutter build apk --release
 
