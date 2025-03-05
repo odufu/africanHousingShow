@@ -37,6 +37,7 @@ jobs:
             if [ -f "$BUILD_GRADLE" ]; then
               echo "Original build.gradle content:"
               cat "$BUILD_GRADLE"
+              echo "--------------------------------"
               # 1. Add namespace if not present
               if ! grep -q "namespace" "$BUILD_GRADLE"; then
                 MANIFEST="$PLUGIN_PATH/android/src/main/AndroidManifest.xml"
@@ -58,18 +59,23 @@ jobs:
               fi
               # 2. Update Kotlin Gradle plugin version to 1.9.0
               echo "Attempting to update Kotlin Gradle plugin version..."
-              if grep -q "kotlin-gradle-plugin" "$BUILD_GRADLE"; then
+              if grep -q "org.jetbrains.kotlin:kotlin-gradle-plugin" "$BUILD_GRADLE"; then
                 echo "Found kotlin-gradle-plugin, replacing version with 1.9.0"
-                sed -i 's/kotlin-gradle-plugin:[0-1]\.[0-9]\.[0-9]\{1,2\}/kotlin-gradle-plugin:1.9.0/g' "$BUILD_GRADLE"
+                sed -i 's/org.jetbrains.kotlin:kotlin-gradle-plugin:[0-1]\.[0-9]\.[0-9]\{1,2\}/org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0/g' "$BUILD_GRADLE"
                 if grep -q "kotlin-gradle-plugin:1.3.50" "$BUILD_GRADLE"; then
-                  echo "WARNING: Replacement failed, 1.3.50 still present"
+                  echo "ERROR: Replacement failed, 1.3.50 still present"
+                  exit 1
                 else
-                  echo "Kotlin version updated successfully"
+                  echo "Kotlin version updated successfully to 1.9.0"
                 fi
               else
                 echo "No kotlin-gradle-plugin found, adding it to buildscript"
                 if grep -q "buildscript {" "$BUILD_GRADLE"; then
-                  sed -i '/buildscript {/a \    dependencies {\n        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0"\n    }' "$BUILD_GRADLE"
+                  if grep -q "dependencies {" "$BUILD_GRADLE"; then
+                    sed -i '/dependencies {/a \        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0"' "$BUILD_GRADLE"
+                  else
+                    sed -i '/buildscript {/a \    dependencies {\n        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0"\n    }' "$BUILD_GRADLE"
+                  fi
                 else
                   echo "Adding full buildscript block"
                   echo -e "buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath \"org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0\"\n    }\n}\n$(cat $BUILD_GRADLE)" > "$BUILD_GRADLE.tmp" && mv "$BUILD_GRADLE.tmp" "$BUILD_GRADLE"
@@ -77,6 +83,7 @@ jobs:
               fi
               echo "Modified build.gradle content:"
               cat "$BUILD_GRADLE"
+              echo "--------------------------------"
             else
               echo "build.gradle not found at $BUILD_GRADLE"
               exit 1
@@ -122,7 +129,7 @@ jobs:
                   fi
                 else
                   echo "Error: AndroidManifest.xml not found at $MANIFEST"
-                  exit 1
+                    exit 1
                 fi
               else
                 echo "Namespace already defined in $BUILD_GRADLE"
