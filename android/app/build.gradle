@@ -21,12 +21,12 @@ android {
 
     defaultConfig {
         applicationId "com.example.african_housing_show"
-        minSdk flutter.minSdkVersion
+        minSdk 24
         targetSdk flutter.targetSdkVersion
         versionCode flutter.versionCode
         versionName flutter.versionName
     }
-
+    
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
